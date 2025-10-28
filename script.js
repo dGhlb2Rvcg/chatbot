@@ -19,34 +19,68 @@ function addMessage(text, sender) {
 async function fetchBotReply(userText) {
   statusDiv.textContent = 'Thinking...';
   try {
-    const res = await fetch('https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill', {
+    const res = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inputs: userText })
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        inputs: {
+          text: userText,
+          max_length: 100
+        }
+      })
     });
-    if (!res.ok) throw new Error('API error');
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+    
     const data = await res.json();
-    const reply = data.generated_text || "Sorry, I didn't understand.";
+    // Handle the DialoGPT response format
+    const reply = Array.isArray(data) && data.length > 0 ? 
+                 data[0].generated_text : 
+                 "I'm sorry, I couldn't generate a response.";
+    
     addMessage(reply, 'bot');
     statusDiv.textContent = '';
   } catch (err) {
-    addMessage('Error: Unable to reach AI model.', 'bot');
+    console.error('API Error:', err);
+    addMessage('Error: Unable to reach AI model. Please try again in a moment.', 'bot');
     statusDiv.textContent = '';
   }
 }
 
-chatForm.addEventListener('submit', e => {
+// Add a simple retry mechanism
+async function fetchWithRetry(userText, maxRetries = 2) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await fetchBotReply(userText);
+      return;
+    } catch (err) {
+      if (i === maxRetries - 1) throw err;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+}
+
+chatForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = userInput.value.trim();
   if (!text) return;
   addMessage(text, 'user');
   userInput.value = '';
-  fetchBotReply(text);
+  try {
+    await fetchWithRetry(text);
+  } catch (err) {
+    console.error('Final error after retries:', err);
+  }
 });
 
 micBtn.addEventListener('click', () => {
   if (listening) {
-    recognition.stop();
+    recognition?.stop();
     return;
   }
   if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
@@ -72,16 +106,24 @@ micBtn.addEventListener('click', () => {
     micIcon.textContent = '🎙️';
     listening = false;
   };
+
   recognition.onerror = event => {
     statusDiv.textContent = 'Mic error: ' + event.error;
     micBtn.classList.remove('active');
     micIcon.textContent = '🎙️';
     listening = false;
   };
+
   recognition.onend = () => {
     micBtn.classList.remove('active');
     micIcon.textContent = '🎙️';
     listening = false;
   };
+
   recognition.start();
+});
+
+// Add initial welcome message
+window.addEventListener('load', () => {
+  addMessage('Hello! How can I help you today?', 'bot');
 });
