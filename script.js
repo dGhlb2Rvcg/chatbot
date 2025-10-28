@@ -17,23 +17,21 @@ function addMessage(text, sender) {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-// Send user text to public ollama.run API
+// Send user text to llm7.io API
 async function fetchBotReply(userText) {
-  // Use the "llama2" model for general chat (safe, fast, free)
-  // Docs: https://ollama.run/api
   statusDiv.textContent = 'Thinking...';
   try {
-    const res = await fetch('https://api.ollama.run/v1/chat/completions', {
+    const res = await fetch('https://api.llm7.io/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama2',
-        messages: [{ role: 'user', content: userText }],
-        stream: false
+        model: 'llama-3-8b',
+        messages: [{ role: 'user', content: userText }]
       })
     });
     if (!res.ok) throw new Error('API error');
     const data = await res.json();
+    // llm7.io returns: { choices: [ { message: { content: "..."} } ] }
     const reply = data.choices?.[0]?.message?.content?.trim() || "Sorry, I didn't understand.";
     addMessage(reply, 'bot');
     statusDiv.textContent = '';
