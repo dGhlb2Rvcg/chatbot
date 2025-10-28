@@ -8,7 +8,6 @@ const statusDiv = document.getElementById('status');
 let recognition;
 let listening = false;
 
-// Display a message in the chat window
 function addMessage(text, sender) {
   const msgDiv = document.createElement('div');
   msgDiv.className = 'message ' + (sender === 'user' ? 'user' : 'bot');
@@ -17,7 +16,6 @@ function addMessage(text, sender) {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-// Send user text to Hugging Face's Blenderbot-400M-distill API
 async function fetchBotReply(userText) {
   statusDiv.textContent = 'Thinking...';
   try {
@@ -37,7 +35,6 @@ async function fetchBotReply(userText) {
   }
 }
 
-// Text submit handler
 chatForm.addEventListener('submit', e => {
   e.preventDefault();
   const text = userInput.value.trim();
@@ -47,7 +44,6 @@ chatForm.addEventListener('submit', e => {
   fetchBotReply(text);
 });
 
-// Voice-to-text handler
 micBtn.addEventListener('click', () => {
   if (listening) {
     recognition.stop();
@@ -61,7 +57,6 @@ micBtn.addEventListener('click', () => {
   statusDiv.textContent = 'Listening...';
   micIcon.textContent = '🎤';
 
-  // Use browser's built-in SpeechRecognition
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SpeechRecognition();
   recognition.lang = 'en-US';
