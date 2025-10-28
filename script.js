@@ -17,22 +17,18 @@ function addMessage(text, sender) {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-// Send user text to llm7.io API
+// Send user text to Hugging Face's Blenderbot-400M-distill API
 async function fetchBotReply(userText) {
   statusDiv.textContent = 'Thinking...';
   try {
-    const res = await fetch('https://api.llm7.io/v1/chat/completions', {
+    const res = await fetch('https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'llama-3-8b',
-        messages: [{ role: 'user', content: userText }]
-      })
+      body: JSON.stringify({ inputs: userText })
     });
     if (!res.ok) throw new Error('API error');
     const data = await res.json();
-    // llm7.io returns: { choices: [ { message: { content: "..."} } ] }
-    const reply = data.choices?.[0]?.message?.content?.trim() || "Sorry, I didn't understand.";
+    const reply = data.generated_text || "Sorry, I didn't understand.";
     addMessage(reply, 'bot');
     statusDiv.textContent = '';
   } catch (err) {
