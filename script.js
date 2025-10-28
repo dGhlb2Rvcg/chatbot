@@ -19,40 +19,37 @@ function addMessage(text, sender) {
 async function fetchBotReply(userText) {
   statusDiv.textContent = 'Thinking...';
   try {
-    const res = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium', {
+    const response = await fetch('https://api.llm7.io/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Content-Type': 'application/json'
+        // no Authorization header needed
       },
       body: JSON.stringify({
-        inputs: {
-          text: userText,
-          max_length: 100
-        }
+        model: 'gpt-4o-mini-2024-07-18',  // choose a model supported
+        messages: [
+          { role: 'system', content: 'You are a friendly AI chatbot.' },
+          { role: 'user', content: userText }
+        ]
       })
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
     }
-    
-    const data = await res.json();
-    // Handle the DialoGPT response format
-    const reply = Array.isArray(data) && data.length > 0 ? 
-                 data[0].generated_text : 
-                 "I'm sorry, I couldn't generate a response.";
-    
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't generate a response.";
     addMessage(reply, 'bot');
     statusDiv.textContent = '';
   } catch (err) {
     console.error('API Error:', err);
-    addMessage('Error: Unable to reach AI model. Please try again in a moment.', 'bot');
+    addMessage('⚠️ Error: Unable to reach AI model. Please try again later.', 'bot');
     statusDiv.textContent = '';
   }
 }
 
-// Add a simple retry mechanism
+// Simple retry logic
 async function fetchWithRetry(userText, maxRetries = 2) {
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -123,7 +120,7 @@ micBtn.addEventListener('click', () => {
   recognition.start();
 });
 
-// Add initial welcome message
+// Initial greeting
 window.addEventListener('load', () => {
-  addMessage('Hello! How can I help you today?', 'bot');
+  addMessage('👋 Hello! How can I help you today?', 'bot');
 });
